@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediksi Sudut: Serangan Alien</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: rgba(20, 30, 48, 0.7);
+            --text-color: #e2e8f0;
+            --accent-color: #00ffcc;
+            --accent-hover: #00ccaa;
+            --danger: #ff4757;
+            --success: #2ed573;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(0, 255, 204, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(255, 71, 87, 0.08), transparent 25%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        header {
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #00ffcc, #3498db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        p.subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .game-panel {
+            background: var(--panel-bg);
+            border-radius: 24px;
+            padding: 2rem;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 2rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .target-info {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            border-left: 4px solid var(--danger);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .score-info {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            border-left: 4px solid var(--success);
+        }
+
+        .radar-container {
+            position: relative;
+            width: 600px;
+            height: 300px; /* Semi-circle */
+            background: rgba(0, 20, 40, 0.5);
+            border-top-left-radius: 300px;
+            border-top-right-radius: 300px;
+            border: 2px solid rgba(0, 255, 204, 0.3);
+            border-bottom: 4px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        /* Radar Grid */
+        .radar-grid {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 100%;
+            height: 200%;
+            transform: translateX(-50%);
+            border-radius: 50%;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+
+        .radar-grid:nth-child(2) { width: 66%; height: 133%; }
+        .radar-grid:nth-child(3) { width: 33%; height: 66%; }
+
+        .cannon-base {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 30px;
+            background: #34495e;
+            border-top-left-radius: 30px;
+            border-top-right-radius: 30px;
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        .cannon-barrel {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 16px;
+            height: 100px;
+            background: linear-gradient(to top, #7f8c8d, #bdc3c7);
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(0deg);
+            transition: transform 0.1s linear;
+            border-radius: 8px;
+            z-index: 9;
+        }
+
+        .laser {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 4px;
+            height: 0;
+            background: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color), 0 0 20px var(--accent-color);
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(0deg);
+            z-index: 8;
+            opacity: 0;
+            transition: height 0.2s ease-out, opacity 0.2s;
+        }
+
+        .alien {
+            position: absolute;
+            font-size: 2.5rem;
+            transform: translate(-50%, 50%);
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-shadow: 0 0 20px rgba(255, 71, 87, 0.8);
+            filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.5));
+        }
+
+        .alien.show {
+            opacity: 1;
+            transform: translate(-50%, 50%) scale(1.2);
+        }
+
+        .explosion {
+            position: absolute;
+            font-size: 3rem;
+            transform: translate(-50%, 50%);
+            z-index: 6;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .explosion.show {
+            animation: explode 0.5s ease-out forwards;
+        }
+
+        @keyframes explode {
+            0% { opacity: 1; transform: translate(-50%, 50%) scale(0.5); }
+            50% { opacity: 1; transform: translate(-50%, 50%) scale(1.5); }
+            100% { opacity: 0; transform: translate(-50%, 50%) scale(2); }
+        }
+
+        .controls {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        /* Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            max-width: 500px;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            margin-top: -10px;
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        .btn-fire {
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .btn-fire:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(255, 71, 87, 0.4);
+        }
+
+        .btn-fire:disabled {
+            background: #7f8c8d;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .feedback {
+            font-size: 1.5rem;
+            font-weight: bold;
+            min-height: 2rem;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .success { color: var(--success); text-shadow: 0 0 10px rgba(46, 213, 115, 0.5); }
+        .danger { color: var(--danger); text-shadow: 0 0 10px rgba(255, 71, 87, 0.5); }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            text-align: center;
+            max-width: 600px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Serangan Alien</h1>
+            <p class="subtitle">Prediksi Sudut Tembakan (0° - 180°)</p>
+        </header>
+
+        <div class="game-panel">
+            <div class="hud">
+                <div class="target-info">
+                    <span id="targetAngleText">Target: ???°</span>
+                </div>
+                <div class="score-info">
+                    Skor: <span id="scoreText">0</span>
+                </div>
+            </div>
+
+            <div class="radar-container" id="radar">
+                <div class="radar-grid"></div>
+                <div class="radar-grid"></div>
+                <div class="radar-grid"></div>
+                
+                <!-- Alien -->
+                <div class="alien" id="alien">👾</div>
+                <div class="explosion" id="explosion">💥</div>
+
+                <!-- Cannon -->
+                <div class="cannon-base"></div>
+                <div class="cannon-barrel" id="cannonBarrel"></div>
+                <div class="laser" id="laser"></div>
+            </div>
+
+            <div class="controls">
+                <div class="feedback" id="feedback">Siap menembak!</div>
+                
+                <!-- Slider without values -->
+                <input type="range" id="angleSlider" min="0" max="180" value="90">
+                
+                <button class="btn-fire" id="fireBtn">Tembak (FIRE)</button>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <strong>Cara Bermain:</strong> Alien bersembunyi di lokasi yang ditunjukkan oleh sudut target. Sesuaikan arah meriam dengan slider di bawah (tanpa angka panduan). 0° di kanan, 90° di atas, 180° di kiri. Tekan TEMBAK untuk melihat apakah prediksimu tepat!
+        </div>
+    </div>
+
+    <script>
+        const targetAngleText = document.getElementById('targetAngleText');
+        const scoreText = document.getElementById('scoreText');
+        const cannonBarrel = document.getElementById('cannonBarrel');
+        const laser = document.getElementById('laser');
+        const angleSlider = document.getElementById('angleSlider');
+        const fireBtn = document.getElementById('fireBtn');
+        const alien = document.getElementById('alien');
+        const explosion = document.getElementById('explosion');
+        const feedback = document.getElementById('feedback');
+        const radar = document.getElementById('radar');
+
+        let currentTargetAngle = 0;
+        let score = 0;
+        let isFiring = false;
+        const TOLERANCE = 5; // Allowable error in degrees
+        const RADIUS = 250; // Distance of alien from center bottom
+
+        // Aliens emoji list
+        const aliens = ['👾', '👽', '🛸', '☄️'];
+
+        function initRound() {
+            // Generate random angle between 10 and 170 to avoid extreme edges
+            currentTargetAngle = Math.floor(Math.random() * 161) + 10;
+            targetAngleText.textContent = `Target: ${currentTargetAngle}°`;
+            
+            // Hide alien
+            alien.classList.remove('show');
+            alien.style.opacity = '0';
+            
+            // Reset feedback
+            feedback.textContent = "Menunggu perintah...";
+            feedback.className = "feedback";
+            
+            // Pick random alien icon
+            alien.textContent = aliens[Math.floor(Math.random() * aliens.length)];
+            
+            isFiring = false;
+            fireBtn.disabled = false;
+        }
+
+        // Convert angle (0 right, 180 left) to CSS rotation (0 up, 90 right, -90 left)
+        function getCSSRotation(angle) {
+            // Slider 0 is right (which means +90deg in CSS from top)
+            // Slider 90 is top (which means 0deg in CSS)
+            // Slider 180 is left (which means -90deg in CSS)
+            return 90 - angle;
+        }
+
+        // Update cannon visual on slider move
+        angleSlider.addEventListener('input', (e) => {
+            if (isFiring) return;
+            const val = e.target.value;
+            cannonBarrel.style.transform = `translateX(-50%) rotate(${getCSSRotation(val)}deg)`;
+        });
+
+        function calculatePosition(angleDeg) {
+            // Angle 0 is positive X (right), Angle 90 is negative Y (up in standard coords, but radar is relative)
+            // Center is at bottom 50%.
+            const rad = angleDeg * (Math.PI / 180);
+            const x = Math.cos(rad) * RADIUS;
+            const y = Math.sin(rad) * RADIUS; // positive y is up in math, but in CSS we use bottom
+            return { x, y };
+        }
+
+        function setElementPosition(el, x, y) {
+            // x is relative to center 0. y is relative to bottom 0.
+            el.style.left = `calc(50% + ${x}px)`;
+            el.style.bottom = `${y}px`;
+        }
+
+        fireBtn.addEventListener('click', () => {
+            if (isFiring) return;
+            isFiring = true;
+            fireBtn.disabled = true;
+
+            const playerAngle = parseInt(angleSlider.value);
+            const diff = Math.abs(playerAngle - currentTargetAngle);
+            const hit = diff <= TOLERANCE;
+
+            // Position alien physically
+            const alienPos = calculatePosition(currentTargetAngle);
+            setElementPosition(alien, alienPos.x, alienPos.y);
+            setElementPosition(explosion, alienPos.x, alienPos.y);
+
+            // Animate laser
+            laser.style.transform = `translateX(-50%) rotate(${getCSSRotation(playerAngle)}deg)`;
+            laser.style.height = `${RADIUS + 20}px`;
+            laser.style.opacity = '1';
+
+            // Show alien
+            alien.classList.add('show');
+
+            setTimeout(() => {
+                // Check hit or miss
+                if (hit) {
+                    score += 10;
+                    scoreText.textContent = score;
+                    feedback.textContent = `Tepat Sasaran! (Prediksi: ${playerAngle}°, Target: ${currentTargetAngle}°)`;
+                    feedback.className = "feedback success";
+                    
+                    // Explosion effect
+                    alien.style.opacity = '0';
+                    explosion.classList.add('show');
+                    
+                } else {
+                    feedback.textContent = `Meleset! (Prediksi: ${playerAngle}°, Target: ${currentTargetAngle}°)`;
+                    feedback.className = "feedback danger";
+                }
+
+                // Hide laser
+                laser.style.opacity = '0';
+                laser.style.height = '0';
+
+                // Next round
+                setTimeout(() => {
+                    explosion.classList.remove('show');
+                    initRound();
+                }, 2500);
+
+            }, 300); // Wait for laser animation
+        });
+
+        // Initialize first round
+        initRound();
+        
+        // Initial cannon position
+        cannonBarrel.style.transform = `translateX(-50%) rotate(${getCSSRotation(angleSlider.value)}deg)`;
+
+    </script>
+</body>
+</html>
